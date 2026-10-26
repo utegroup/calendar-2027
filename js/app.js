@@ -26,6 +26,7 @@ const state = {
 };
 
 let scrollHandler = null;
+let carouselFit = null;
 
 function load() {
   try {
@@ -221,14 +222,20 @@ function renderExplore() {
     })
     .join("");
 
+  const dots = crafts
+    .map((craft, index) => {
+      const name = esc(craft.name[state.lang].join(" "));
+      return `<button type="button" class="dot ${index === 0 ? "is-on" : ""}" data-action="craft-dot" data-index="${index}" aria-label="${name}"></button>`;
+    })
+    .join("");
+
   return `
     ${header({ back: true })}
     <section class="explore">
       <h1>${t().exploreTitle[0]}<br>${t().exploreTitle[1]}</h1>
-      <div class="craft-list">
-        ${cards}
-        ${primaryButton(t().discover, "quiz")}
-      </div>
+      <div class="craft-list" id="crafts">${cards}</div>
+      <div class="dots explore-dots">${dots}</div>
+      <div class="explore-cta">${primaryButton(t().discover, "quiz")}</div>
     </section>
   `;
 }
@@ -303,6 +310,10 @@ function render() {
     window.removeEventListener("scroll", scrollHandler);
     scrollHandler = null;
   }
+  if (carouselFit) {
+    window.removeEventListener("resize", carouselFit);
+    carouselFit = null;
+  }
 
   document.documentElement.lang = t().htmlLang;
   document.title = t().title;
@@ -321,6 +332,7 @@ function render() {
 
   if (state.view === "home") bindCarousel();
   if (state.view === "calendar") bindCalendar();
+  if (state.view === "explore") bindExplore();
 }
 
 function carouselCards() {
@@ -362,6 +374,46 @@ function bindCarousel() {
     dots.forEach((dot, index) => dot.classList.toggle("is-on", index === active));
     if (prev) prev.disabled = active === 0;
     if (next) next.disabled = active === cards.length - 1;
+  };
+
+  const fit = () => {
+    const mobile = window.matchMedia("(max-width: 759px), ((orientation: landscape) and (max-height: 560px))").matches;
+    if (!mobile) {
+      track.style.removeProperty("--slide");
+      return;
+    }
+    const band = track.closest(".band");
+    const dots = band && band.querySelector(".dots");
+    if (!band || track.clientWidth === 0) return;
+    const avail = Math.max(72, band.clientHeight - (dots ? dots.offsetHeight : 0) - 8);
+    const slide = Math.min(track.clientWidth * 0.84, avail * (1600 / 1089));
+    track.style.setProperty("--slide", `${Math.floor(slide)}px`);
+  };
+
+  track.addEventListener("scroll", update, { passive: true });
+  carouselFit = fit;
+  window.addEventListener("resize", carouselFit);
+  fit();
+  update();
+}
+
+function bindExplore() {
+  const track = document.querySelector("#crafts");
+  const dots = [...document.querySelectorAll(".explore-dots .dot")];
+  if (!track || dots.length === 0) return;
+
+  const update = () => {
+    const mid = track.scrollLeft + track.clientWidth / 2;
+    let active = 0;
+    let best = Infinity;
+    [...track.querySelectorAll(".craft")].forEach((card, index) => {
+      const distance = Math.abs(card.offsetLeft + card.offsetWidth / 2 - mid);
+      if (distance < best) {
+        best = distance;
+        active = index;
+      }
+    });
+    dots.forEach((dot, index) => dot.classList.toggle("is-on", index === active));
   };
 
   track.addEventListener("scroll", update, { passive: true });
@@ -474,6 +526,12 @@ function onClick(event) {
 
   if (action === "dot") {
     scrollCarousel(Number(target.dataset.index));
+    return;
+  }
+
+  if (action === "craft-dot") {
+    const card = document.querySelectorAll("#crafts .craft")[Number(target.dataset.index)];
+    card?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
     return;
   }
 

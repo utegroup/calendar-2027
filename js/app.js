@@ -26,7 +26,6 @@ const state = {
 };
 
 let scrollHandler = null;
-let carouselFit = null;
 
 function load() {
   try {
@@ -310,10 +309,6 @@ function render() {
     window.removeEventListener("scroll", scrollHandler);
     scrollHandler = null;
   }
-  if (carouselFit) {
-    window.removeEventListener("resize", carouselFit);
-    carouselFit = null;
-  }
 
   document.documentElement.lang = t().htmlLang;
   document.title = t().title;
@@ -376,24 +371,7 @@ function bindCarousel() {
     if (next) next.disabled = active === cards.length - 1;
   };
 
-  const fit = () => {
-    const mobile = window.matchMedia("(max-width: 759px), ((orientation: landscape) and (max-height: 560px))").matches;
-    if (!mobile) {
-      track.style.removeProperty("--slide");
-      return;
-    }
-    const band = track.closest(".band");
-    const dots = band && band.querySelector(".dots");
-    if (!band || track.clientWidth === 0) return;
-    const avail = Math.max(72, band.clientHeight - (dots ? dots.offsetHeight : 0) - 8);
-    const slide = Math.min(track.clientWidth * 0.84, avail * (1600 / 1089));
-    track.style.setProperty("--slide", `${Math.floor(slide)}px`);
-  };
-
   track.addEventListener("scroll", update, { passive: true });
-  carouselFit = fit;
-  window.addEventListener("resize", carouselFit);
-  fit();
   update();
 }
 

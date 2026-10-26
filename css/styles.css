@@ -667,9 +667,13 @@ button:focus-visible {
 
   body[data-view="quiz"] .quiz {
     flex: 1 0 auto;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 28px;
-    padding: 0 24px env(safe-area-inset-bottom);
+    padding: 48px 24px max(40px, env(safe-area-inset-bottom));
+  }
+
+  body[data-view="quiz"] .quiz > .btn {
+    margin-top: auto;
   }
 }
 
